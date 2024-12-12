@@ -1,0 +1,9 @@
+- Mục tiêu của đồ án này là: 
++ Độ chính xác cao.
++ Thời gian chạy của host < Thời gian chạy của GPU < Thời gian chạy của GPU + tối ưu. (Thời gian chạy của từng layer).
++ Với chức năng host khi xây xong phải giải thích chi tiết các bước chạy, nêu ưu và nhược điểm. (đối với host).
++ Với 2 chức năng còn lại giải thích chi tiết các bước chạy, giải thích tại sao lại xây optimize như vậy và nêu ưu, nhược điểm.
++ Vẽ bảng biểu, đồ thị so sánh kết quả. (Giải thích tại sao lại có sự khác biệt đó)
++ Tự chọn batch_size, epoch sao cho hợp lý.
++ Nhận xét tổng kêt.
++ Quay video thuyết trinh.

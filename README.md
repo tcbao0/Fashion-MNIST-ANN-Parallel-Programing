@@ -1,0 +1,1 @@
+# Fashion-MNIST-ANN-Parallel-Programing

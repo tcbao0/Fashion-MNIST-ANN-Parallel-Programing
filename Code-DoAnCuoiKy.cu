@@ -9,7 +9,7 @@
 #define HIDDEN_SIZE_1 128
 #define HIDDEN_SIZE_2 128
 #define OUTPUT_SIZE 10
-#define EPOCHS 10
+#define EPOCHS 3
 #define LEARNING_RATE 0.01
 
 #define CHECK(call)\
@@ -224,10 +224,10 @@ void updateWeights(float* weights, float* biases, float* layer, float* delta,
 __global__ void updateWeightsGPU(float* weights, float* biases, float* layer, float* delta, int layerSize, int prevLayerSize, float learningRate) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < layerSize) {
-        biases[idx] += learningRate * delta[idx];
         for (int j = 0; j < prevLayerSize; j++) {
             atomicAdd(&weights[j * layerSize + idx], learningRate * layer[j] * delta[idx]);
         }
+        atomicAdd(&biases[idx], learningRate * delta[idx]);
     }
 }
 
@@ -271,6 +271,122 @@ __global__ void normalizeInputGPU(float* input, int size) {
     if (idx < size) {
         input[idx] = input[idx] / 255.0f; // Normalize to range [0, 1]
     }
+}
+
+__global__ void softmaxGPU(float* output, int size)
+{
+    __shared__ float max_val;
+    __shared__ float sum;
+
+    if (threadIdx.x == 0) {
+        max_val = -INFINITY;
+        sum = 0.0f;
+    }
+    __syncthreads();
+
+    float local_max = -INFINITY;
+    for (int i = threadIdx.x; i < size; i += blockDim.x) 
+    {
+        local_max = fmaxf(local_max, output[i]);
+    }
+    atomicAdd(&max_val, local_max);
+    __syncthreads();
+
+    float local_sum = 0;
+    for (int i = threadIdx.x; i < size; i += blockDim.x)
+    {
+        float exp_val = expf(output[i] - max_val);
+        output[i] = exp_val;
+        local_sum += exp_val;
+    }
+    atomicAdd(&sum, local_sum);
+    __syncthreads();
+
+    for (int i = threadIdx.x; i < size; i += blockDim.x)
+    {
+        output[i] /= sum;
+    }
+}
+
+
+__global__ void calculateOutputDeltaGPU(float* outputDelta, float* outputLayer, int* labels, int outputSize, int batchSize) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < outputSize * batchSize) {
+        int sample = idx / outputSize;
+        int label = idx % outputSize;
+        outputDelta[idx] = (labels[sample] == label ? 1.0f : 0.0f) - outputLayer[idx];
+    }
+}
+
+__global__ void computeAccuracyKernel(float* hiddenWeights1, float* hiddenWeights2, float* outputWeights,
+                                      float* hiddenBiases1, float* hiddenBiases2, float* outputBiases,
+                                      float* testImages, unsigned char* testLabels, int numTestImages,
+                                      int* correctPredictions) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < numTestImages) {
+        float inputLayer[INPUT_SIZE];
+        for (int j = 0; j < INPUT_SIZE; j++) {
+            inputLayer[j] = testImages[idx * INPUT_SIZE + j] / 255.0f;
+        }
+
+        float hiddenLayer1[HIDDEN_SIZE_1];
+        float hiddenLayer2[HIDDEN_SIZE_2];
+        float outputLayer[OUTPUT_SIZE];
+
+        // Forward pass
+        forwardLayerGPU<<<1, HIDDEN_SIZE_1>>>(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1, true);
+        forwardLayerGPU<<<1, HIDDEN_SIZE_2>>>(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2, true);
+        forwardLayerGPU<<<1, OUTPUT_SIZE>>>(hiddenLayer2, outputWeights, outputBiases, outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);
+        softmaxGPU<<<1, OUTPUT_SIZE>>>(outputLayer, OUTPUT_SIZE);
+
+        // Find predicted label
+        int predictedLabel = 0;
+        for (int j = 1; j < OUTPUT_SIZE; j++) {
+            if (outputLayer[j] > outputLayer[predictedLabel]) {
+                predictedLabel = j;
+            }
+        }
+
+        if (predictedLabel == testLabels[idx]) {
+            atomicAdd(correctPredictions, 1);
+        }
+    }
+}
+
+float computeAccuracyGPU(float* d_hiddenWeights1, float* d_hiddenWeights2, float* d_outputWeights,
+    float* d_hiddenBiases1, float* d_hiddenBiases2, float* d_outputBiases,
+    unsigned char** testImages, unsigned char* testLabels, int numTestImages) {
+float* d_testImages;
+unsigned char* d_testLabels;
+int* d_correctPredictions;
+int h_correctPredictions = 0;
+
+CHECK(cudaMalloc(&d_testImages, numTestImages * INPUT_SIZE * sizeof(float)));
+CHECK(cudaMalloc(&d_testLabels, numTestImages * sizeof(unsigned char)));
+CHECK(cudaMalloc(&d_correctPredictions, sizeof(int)));
+
+// Copy test data to device
+for (int i = 0; i < numTestImages; i++) {
+CHECK(cudaMemcpy(d_testImages + i * INPUT_SIZE, testImages[i], INPUT_SIZE * sizeof(float), cudaMemcpyHostToDevice));
+}
+CHECK(cudaMemcpy(d_testLabels, testLabels, numTestImages * sizeof(unsigned char), cudaMemcpyHostToDevice));
+CHECK(cudaMemset(d_correctPredictions, 0, sizeof(int)));
+
+dim3 blockDim(256);
+dim3 gridDim((numTestImages + blockDim.x - 1) / blockDim.x);
+
+computeAccuracyKernel<<<gridDim, blockDim>>>(d_hiddenWeights1, d_hiddenWeights2, d_outputWeights,
+                            d_hiddenBiases1, d_hiddenBiases2, d_outputBiases,
+                            d_testImages, d_testLabels, numTestImages,
+                            d_correctPredictions);
+
+CHECK(cudaMemcpy(&h_correctPredictions, d_correctPredictions, sizeof(int), cudaMemcpyDeviceToHost));
+
+cudaFree(d_testImages);
+cudaFree(d_testLabels);
+cudaFree(d_correctPredictions);
+
+return (float)h_correctPredictions / numTestImages;
 }
 
 
@@ -381,6 +497,8 @@ int training(unsigned char** trainImages, unsigned char* trainLabels, unsigned c
         float *d_hiddenBiases1, *d_hiddenBiases2, *d_outputBiases;
         float *d_hiddenLayer1, *d_hiddenLayer2, *d_outputLayer;
         float *d_outputDelta, *d_hiddenLayer2Delta, *d_hiddenLayer1Delta;
+        int *d_trainLabels;
+
 
         CHECK(cudaMalloc(&d_inputLayer, INPUT_SIZE * sizeof(float)));
         CHECK(cudaMalloc(&d_hiddenWeights1, INPUT_SIZE * HIDDEN_SIZE_1 * sizeof(float)));
@@ -395,55 +513,92 @@ int training(unsigned char** trainImages, unsigned char* trainLabels, unsigned c
         CHECK(cudaMalloc(&d_outputDelta, OUTPUT_SIZE * sizeof(float)));
         CHECK(cudaMalloc(&d_hiddenLayer2Delta, HIDDEN_SIZE_2 * sizeof(float)));
         CHECK(cudaMalloc(&d_hiddenLayer1Delta, HIDDEN_SIZE_1 * sizeof(float)));
+        CHECK(cudaMalloc(&d_trainLabels, numTrainImages * sizeof(int)));
+
+        CHECK(cudaMemcpy(d_trainLabels, trainLabels, numTrainImages * sizeof(int), cudaMemcpyHostToDevice));
 
         dim3 blockDim(128);
-        dim3 inputGridDimensions((numTrainImages * INPUT_SIZE + blockDim.x - 1) / blockDim.x);
 
         for (int epoch = 0; epoch <= EPOCHS; epoch++)
         {   
             //TODO
             for (int i = 0; i < numTrainImages; i++)
             {
-            CHECK(cudaMemcpy(d_inputLayer, &trainImages[i * INPUT_SIZE], INPUT_SIZE * sizeof(float), cudaMemcpyHostToDevice));
-            
-            // Xử lý lớp input
-            timer.Start();
-            //TODO
-            normalizeInputGPU<<<inputGridDimensions, blockDim>>>(d_inputLayer, INPUT_SIZE);
-            cudaDeviceSynchronize();
-            timer.Stop();
-            timeInputLayer += timer.Elapsed();
+                CHECK(cudaMemcpy(d_inputLayer, trainImages[i], INPUT_SIZE * sizeof(float), cudaMemcpyHostToDevice));
+                
+                // Normalize input
+                timer.Start();
+                dim3 inputGridDim((INPUT_SIZE + blockDim.x - 1) / blockDim.x);
+                normalizeInputGPU<<<inputGridDim, blockDim>>>(d_inputLayer, INPUT_SIZE);
+                cudaDeviceSynchronize();
+                timer.Stop();
+                timeInputLayer += timer.Elapsed();
 
-            // Xử lý lớp hidden 1
-            timer.Start();
-            //TODO
-            forwardLayerGPU<<<gridDim, blockDim>>>(d_inputLayer, d_hiddenWeights1, d_hiddenBiases1, d_hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1, true);
-            cudaDeviceSynchronize();
-            timer.Stop();
-            timeHiddenLayer1 += timer.Elapsed();
+                // Forward pass: Hidden layer 1
+                timer.Start();
+                dim3 hiddenGridDim((HIDDEN_SIZE_1 + blockDim.x - 1) / blockDim.x);
+                forwardLayerGPU<<<hiddenGridDim, blockDim>>>(d_inputLayer, d_hiddenWeights1, d_hiddenBiases1, d_hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1, true);
+                cudaDeviceSynchronize();
+                timer.Stop();
+                timeHiddenLayer1 += timer.Elapsed();
 
-            // Xử lý lớp hidden 2
-            timer.Start();
-            //TODO
-            forwardLayerGPU<<<gridDim, blockDim>>>(d_hiddenLayer1, d_hiddenWeights2, d_hiddenBiases2, d_hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2, true);
-            cudaDeviceSynchronize();
-            timer.Stop();
-            timeHiddenLayer2 += timer.Elapsed();
+                // Forward pass: Hidden layer 2
+                timer.Start();
+                forwardLayerGPU<<<hiddenGridDim, blockDim>>>(d_hiddenLayer1, d_hiddenWeights2, d_hiddenBiases2, d_hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2, true);
+                cudaDeviceSynchronize();
+                timer.Stop();
+                timeHiddenLayer2 += timer.Elapsed();
 
-            // Xử lý lớp output
-            timer.Start();
-            //TODO
-            forwardLayerGPU<<<gridDim, blockDim>>>(d_hiddenLayer2, d_outputWeights, d_outputBiases, d_outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);
-            timer.Stop();
-            timeOutputLayer += timer.Elapsed();
+                // Forward pass: Output layer
+                timer.Start();
+                dim3 outputGridDim((OUTPUT_SIZE + blockDim.x - 1) / blockDim.x);
+                forwardLayerGPU<<<outputGridDim, blockDim>>>(d_hiddenLayer2, d_outputWeights, d_outputBiases, d_outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);
+                softmaxGPU<<<1, OUTPUT_SIZE>>>(d_outputLayer, OUTPUT_SIZE);
+                cudaDeviceSynchronize();
+                timer.Stop();
+                timeOutputLayer += timer.Elapsed();
 
-            updateWeightsGPU<<<gridDim, blockDim>>>(d_outputWeights, d_outputBiases, d_hiddenLayer2, d_outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2, LEARNING_RATE);
-            cudaDeviceSynchronize();
+                // Compute output delta
+                calculateOutputDeltaGPU<<<outputGridDim, blockDim>>>(d_outputDelta, d_outputLayer, d_trainLabels, OUTPUT_SIZE, 1);
+                cudaDeviceSynchronize();
 
-            
+                // Backpropagation: Update weights for output layer
+                timer.Start();
+                updateWeightsGPU<<<outputGridDim, blockDim>>>(d_outputWeights, d_outputBiases, d_hiddenLayer2, d_outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2, LEARNING_RATE);
+                cudaDeviceSynchronize();
+                timer.Stop();
+                timeHidden2Output += timer.Elapsed();
+
+                // Backpropagation: Compute delta for hidden layer 2
+                timer.Start();
+                computeDeltaGPU<<<hiddenGridDim, blockDim>>>(d_hiddenLayer2, d_outputDelta, d_hiddenLayer2Delta, d_outputWeights, HIDDEN_SIZE_2, OUTPUT_SIZE);
+                cudaDeviceSynchronize();
+
+                // Update weights for hidden layer 2
+                updateWeightsGPU<<<hiddenGridDim, blockDim>>>(d_hiddenWeights2, d_hiddenBiases2, d_hiddenLayer1, d_hiddenLayer2Delta, HIDDEN_SIZE_2, HIDDEN_SIZE_1, LEARNING_RATE);
+                cudaDeviceSynchronize();
+                timer.Stop();
+                timeHidden1Hidden2 += timer.Elapsed();
+
+                // Backpropagation: Compute delta for hidden layer 1
+                timer.Start();
+                computeDeltaGPU<<<hiddenGridDim, blockDim>>>(d_hiddenLayer1, d_hiddenLayer2Delta, d_hiddenLayer1Delta, d_hiddenWeights2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
+                cudaDeviceSynchronize();
+
+                // Update weights for hidden layer 1
+                updateWeightsGPU<<<hiddenGridDim, blockDim>>>(d_hiddenWeights1, d_hiddenBiases1, d_inputLayer, d_hiddenLayer1Delta, HIDDEN_SIZE_1, INPUT_SIZE, LEARNING_RATE);
+                cudaDeviceSynchronize();
+                timer.Stop();
+                timeInputHidden1 += timer.Elapsed();
             }
-        printf("Epoch %d completed\n", epoch + 1);
+            if (epoch % 10 == 0) {  // Print accuracy every 10 epochs
+                float accuracy = computeAccuracyGPU(d_hiddenWeights1, d_hiddenWeights2, d_outputWeights,
+                                                    d_hiddenBiases1, d_hiddenBiases2, d_outputBiases,
+                                                    testImages, testLabels, numTestImages);
+                printf("Epoch %d: Accuracy = %.2f%%\n", epoch, accuracy * 100);
+            }        
         }
+        finalAccuracy = computeAccuracyGPU(d_hiddenWeights1, d_hiddenWeights2, d_outputWeights, d_hiddenBiases1, d_hiddenBiases2, d_outputBiases, testImages, testLabels, numTestImages);
         // Free device memory
         cudaFree(d_inputLayer);
         cudaFree(d_hiddenWeights1);
@@ -458,6 +613,8 @@ int training(unsigned char** trainImages, unsigned char* trainLabels, unsigned c
         cudaFree(d_outputDelta);
         cudaFree(d_hiddenLayer2Delta);
         cudaFree(d_hiddenLayer1Delta);
+        cudaFree(d_trainLabels);
+
     } 
     else {
         // Xử lý với kernel2

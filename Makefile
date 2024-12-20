@@ -4,11 +4,10 @@ TARGET = run
 
 SRCS = main.cu \
        utils.cu \
-       CPU/nnCPU.cu \
-       GPU/nnGPU.cu \
-       GPUOptimize/nnOptimize.cu
+       modules/CPU/nnCPU.cu \
+       modules/GPU/nnGPU.cu
 
-INCLUDE_DIRS = -ICPU -IGPU -IOptimize
+INCLUDE_DIRS = -ICPU -IGPU
 
 NVCC_FLAGS = -std=c++14
 

@@ -1,74 +1,37 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <cfloat>
+#ifndef UTILS_CU
+#define UTILS_CU
+#include "utils.h"
 
-#define IMAGE_ROWS 28
-#define IMAGE_COLS 28
-#define INPUT_SIZE 784
-#define HIDDEN_SIZE_1 128
-#define HIDDEN_SIZE_2 128
-#define OUTPUT_SIZE 10
-#define EPOCHS 1
-#define BATCH_SIZE 512
-#define LEARNING_RATE 0.01
-#define NSTREAMS 4
-
-#define CHECK(call)                                                \
-    {                                                              \
-        const cudaError_t error = call;                            \
-        if (error != cudaSuccess)                                  \
-        {                                                          \
-            fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__); \
-            fprintf(stderr, "code: %d, reason: %s\n", error,       \
-                    cudaGetErrorString(error));                    \
-            exit(EXIT_FAILURE);                                    \
-        }                                                          \
-    }
-
-struct returnStruct {
-    float timeInputLayer, timeHiddenLayer1, timeHiddenLayer2, timeOutputLayer;
-    float timeInputHidden1, timeHidden1Hidden2, timeHidden2Output;
-    float finalAccuracy;
+GpuTimer::GpuTimer()
+{
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 }
 
-struct GpuTimer
+GpuTimer::~GpuTimer()
 {
-    cudaEvent_t start;
-    cudaEvent_t stop;
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+}
 
-    GpuTimer()
-    {
-        cudaEventCreate(&start);
-        cudaEventCreate(&stop);
-    }
+void GpuTimer::Start()
+{
+    cudaEventRecord(start, 0);
+    cudaEventSynchronize(start);
+}
 
-    ~GpuTimer()
-    {
-        cudaEventDestroy(start);
-        cudaEventDestroy(stop);
-    }
+void GpuTimer::Stop()
+{
+    cudaEventRecord(stop, 0);
+}
 
-    void Start()
-    {
-        cudaEventRecord(start, 0);
-        cudaEventSynchronize(start);
-    }
-
-    void Stop()
-    {
-        cudaEventRecord(stop, 0);
-    }
-
-    float Elapsed()
-    {
-        float elapsed;
-        cudaEventSynchronize(stop);
-        cudaEventElapsedTime(&elapsed, start, stop);
-        return elapsed;
-    }
-};
+float GpuTimer::Elapsed()
+{
+    float elapsed;
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsed, start, stop);
+    return elapsed;
+}
 
 uint32_t swapEndian(uint32_t test)
 {
@@ -139,3 +102,5 @@ unsigned char *readLabels(const char *fileName, int *numLabels)
     fclose(f);
     return labels;
 }
+
+#endif

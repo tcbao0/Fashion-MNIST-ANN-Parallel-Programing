@@ -1,9 +1,6 @@
-#include "utils.h"
-#include "CPU/nnCPU.h"
-#include "GPU/nnGPU.h"
-#include "nnOptimizeVer1/nnOptimizeVer1.h"
-#include "nnOptimizeVer2/nnOptimizeVer2.h"
-#include "utils.h"
+#include "utils.cu"
+#include "modules/CPU/nnCPU.h"
+#include "modules/GPU/nnGPU.h"
 
 int main() {
     const char* trainImageFile = "./dataset/train/train-images-idx3-ubyte";
@@ -46,23 +43,21 @@ int main() {
 
     // Run with host
     printf("### Training with Host ###\n\n");
-    nnCPU nnHost();
-    nnHost.train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
+    train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
 
     // Run with GPU
     printf("\n### Training with basic GPU ###\n\n");
-    nnGPU nnDevice();
-    nnGPU.training(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
+    trainKernel1(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
 
     // Run with optimized GPU version 1
-    printf("\n### Training with optimized GPU version 1 ###\n\n");
-    nnOptimizeVer1 nnDeivceOp1();
-    nnDeivceOp1.train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
+    // printf("\n### Training with optimized GPU version 1 ###\n\n");
+    // nnOptimizeVer1 nnDeivceOp1();
+    // nnDeivceOp1.train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
 
     // Run with optimized GPU version 2
-    printf("\n### Training with optimized GPU version 2 ###\n\n");
-    nnOptimizeVer2 nnDeivceOp2();
-    nnDeivceOp2.train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
+    // printf("\n### Training with optimized GPU version 2 ###\n\n");
+    // nnOptimizeVer2 nnDeivceOp2();
+    // nnDeivceOp2.train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
 
     // Free memory
     for (int i = 0; i < numTrainImages; i++)

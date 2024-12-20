@@ -1,15 +1,10 @@
 #include "nnCPU.h"
 
-nnCPU::nnCPU()
-{}
-
-nnCPU::~nnCPU() {}
-
-void nnCPU::forwardLayer(
+void forwardLayer(
     float *inputLayer,
     float *weights,
     float *biases,
-    loat *outputLayer,
+    float *outputLayer,
     int inputSize,
     int outputSize,
     bool applySigmoid)
@@ -25,7 +20,7 @@ void nnCPU::forwardLayer(
     }
 }
 
-void nnCPU::calculateCValue(
+void calculateCValue(
     float *outputDelta,
     float *outputLayer,
     unsigned char *trainLabels,
@@ -36,7 +31,7 @@ void nnCPU::calculateCValue(
         outputDelta[j] = (trainLabels[i] == j ? 1.0f : 0.0f) - outputLayer[j];
 }
 
-void nnCPU::calculateDeltaLayer(
+void calculateDeltaLayer(
     float *currentLayer,
     float *nextLayerDelta,
     float *currentLayerDelta,
@@ -50,7 +45,7 @@ void nnCPU::calculateDeltaLayer(
         for (int k = 0; k < nextLayerSize; k++)
             currentLayerDelta[j] += nextLayerDelta[k] * weights[j * nextLayerSize + k];
 
-        currentLayerDelta[j] *= sigmoid_derivative(currentLayer[j]);
+        currentLayerDelta[j] *= sigmoidDerivative(currentLayer[j]);
     }
 }
 
@@ -71,7 +66,7 @@ void updateWeights(
         biases[j] += learningRate * delta[j];
 }
 
-void nnCPU::softmax(float *x, int size)
+void softmax(float *x, int size)
 {
     float maxVal = -FLT_MAX;
     for (int i = 0; i < size; i++)
@@ -92,7 +87,22 @@ void nnCPU::softmax(float *x, int size)
     }
 }
 
-float* nnCPU::initWeightBias(int size)
+void createInputLayer(unsigned char* image, int inputSize, float** inputLayer) 
+{
+    *inputLayer = (float*)malloc(inputSize * sizeof(float));
+    if (!*inputLayer) {
+        printf("Memory allocation failed for inputLayer\n");
+        return;
+    }
+    
+    // Chuẩn hóa giá trị pixel (Normalize)
+    for (int j = 0; j < inputSize; j++) {
+        (*inputLayer)[j] = image[j] / 255.0f;
+    }
+}
+
+
+float* initWeightBias(int size)
 {
     float* data = (float*)malloc(size * sizeof(float));
     for (int i = 0; i < size; i++)
@@ -101,7 +111,7 @@ float* nnCPU::initWeightBias(int size)
     return data;
 }
 
-returnStruct nnCPU::train(unsigned char** trainImages, unsigned char* trainLabels, unsigned char** testImages, unsigned char* testLabels, int numTrainImages, int numTestImages, int numRows, int numCols) {
+returnStruct train(unsigned char** trainImages, unsigned char* trainLabels, unsigned char** testImages, unsigned char* testLabels, int numTrainImages, int numTestImages, int numRows, int numCols) {
     GpuTimer timer;
     float timeInputLayer = 0, timeHiddenLayer1 = 0, timeHiddenLayer2 = 0, timeOutputLayer = 0;
     float timeInputHidden1 = 0, timeHidden1Hidden2 = 0, timeHidden2Output = 0;
@@ -117,7 +127,7 @@ returnStruct nnCPU::train(unsigned char** trainImages, unsigned char* trainLabel
     float* outputBiases = initWeightBias(OUTPUT_SIZE);
 
     // Training
-    for (int epoch = 1; epoch <= EPOCHS; epoch++)
+    for (int epoch = 1; epoch <= EPOCHS; epoch++) {
         for (int batchStart = 0; batchStart < numTrainImages; batchStart += BATCH_SIZE) {
             int batchSize = fmin(BATCH_SIZE, numTrainImages - batchStart);
             for (int i = batchStart; i < batchStart + batchSize; i++) {
@@ -130,19 +140,19 @@ returnStruct nnCPU::train(unsigned char** trainImages, unsigned char* trainLabel
                 // Xử lý lớp Hidden 1 và đo thời gian
                 timer.Start();
                 float* hiddenLayer1 = (float*)malloc(HIDDEN_SIZE_1 * sizeof(float));
-                forwardLayerCPU(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1);
+                forwardLayer(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1);
                 timer.Stop();
                 timeHiddenLayer1 += timer.Elapsed();
                 // Xử lý lớp Hidden 2 và đo thời gian
                 timer.Start();
                 float* hiddenLayer2 = (float*)malloc(HIDDEN_SIZE_2 * sizeof(float));
-                forwardLayerCPU(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
+                forwardLayer(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
                 timer.Stop();
                 timeHiddenLayer2 += timer.Elapsed();
                 // Xử lý lớp Output và đo thời gian
                 timer.Start();
                 float* outputLayer = (float*)malloc(OUTPUT_SIZE * sizeof(float));
-                forwardLayerCPU(hiddenLayer2, outputWeights, outputBiases, outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);
+                forwardLayer(hiddenLayer2, outputWeights, outputBiases, outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);
                 timer.Stop();
                 timeOutputLayer += timer.Elapsed();
                 // Áp dụng softmax để có xác suất cho mỗi lớp
@@ -180,8 +190,8 @@ returnStruct nnCPU::train(unsigned char** trainImages, unsigned char* trainLabel
             }
         }
         printf("Epoch %d: Accuracy = %.4f\n", epoch, computeFinalAccuracy(testImages, testLabels, numTestImages, numRows, numCols, hiddenWeights1, hiddenWeights2, outputWeights, hiddenBiases1, hiddenBiases2, outputBiases, BATCH_SIZE));
-    computeFinalAccuracy(testImages, testLabels, numTestImages, numRows, numCols, hiddenWeights1, hiddenWeights2, outputWeights, hiddenBiases1, hiddenBiases2, outputBiases, BATCH_SIZE);
-
+        computeFinalAccuracy(testImages, testLabels, numTestImages, numRows, numCols, hiddenWeights1, hiddenWeights2, outputWeights, hiddenBiases1, hiddenBiases2, outputBiases, BATCH_SIZE);
+    }
     free(hiddenWeights1);
     free(hiddenWeights2);
     free(outputWeights);
@@ -199,4 +209,42 @@ returnStruct nnCPU::train(unsigned char** trainImages, unsigned char* trainLabel
     result.finalAccuracy = finalAccuracy;
 
     return result;
+}
+
+
+float computeFinalAccuracy(unsigned char** testImages, unsigned char* testLabels, int numTestImages, int numRows, int numCols, float* hiddenWeights1, float* hiddenWeights2, float* outputWeights, float* hiddenBiases1, float* hiddenBiases2, float* outputBiases, int batchSize) {
+    int correct = 0;
+    for (int i = 0; i < numTestImages; i++) {
+        // Quá trình feedforward tương tự như trong training
+        float inputLayer[INPUT_SIZE];
+        for (int j = 0; j < INPUT_SIZE; j++) {
+            inputLayer[j] = testImages[i][j] / 255.0f; // Chuẩn hóa giá trị đầu vào
+        }
+
+        // Lớp ẩn 1
+        float* hiddenLayer1 = (float*)malloc(HIDDEN_SIZE_1 * sizeof(float));
+        forwardLayer(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1);
+
+        float* hiddenLayer2 = (float*)malloc(HIDDEN_SIZE_2 * sizeof(float));
+        forwardLayer(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
+
+        float* outputLayer = (float*)malloc(OUTPUT_SIZE * sizeof(float));
+        forwardLayer(hiddenLayer2, outputWeights, outputBiases, outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);
+
+        // Áp dụng softmax để có xác suất cho mỗi lớp
+        softmax(outputLayer, OUTPUT_SIZE);
+
+        // Kiểm tra kết quả dự đoán
+        int predictedLabel = 0;
+        for (int j = 1; j < OUTPUT_SIZE; j++) {
+            if (outputLayer[j] > outputLayer[predictedLabel]) {
+                predictedLabel = j;
+            }
+        }
+
+        if (predictedLabel == testLabels[i]) {
+            correct++;
+        }
+    }
+    return (float)correct / numTestImages;
 }

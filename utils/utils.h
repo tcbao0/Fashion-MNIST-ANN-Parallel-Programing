@@ -13,10 +13,8 @@
 #define HIDDEN_SIZE_1 128
 #define HIDDEN_SIZE_2 128
 #define OUTPUT_SIZE 10
-#define EPOCHS 1
 #define BATCH_SIZE 512
 #define LEARNING_RATE 0.01
-#define NSTREAMS 4
 
 #define CHECK(call)                                                \
     {                                                              \

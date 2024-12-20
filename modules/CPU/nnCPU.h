@@ -7,7 +7,7 @@
 #include <ctime>
 #include "../../utils/utils.h"
 
-returnStruct train(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols);
+returnStruct train(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols, int numEpochs);
 
 float sigmoid(float x);
 float sigmoidDerivative(float x);

@@ -37,7 +37,7 @@ __global__ void forwardLayerKernel1(float *inputLayer, float *weights, float *bi
             sum += inputLayer[k] * weights[k * outputSize + i];
 
         if (applySigmoid)
-            sum = sigmoid(sum);
+            sum = sigmoidKernel1(sum);
         outputLayer[i] = sum;
     }
 }
@@ -57,7 +57,7 @@ __global__ void calculateDeltaLayerKernel1(float *currentLayer, float *nextLayer
         for (int k = 0; k < nextLayerSize; k++)
             delta += nextLayerDelta[k] * weights[j * nextLayerSize + k];
 
-        currentLayerDelta[j] = delta * sigmoidDerivative(currentLayer[j]);
+        currentLayerDelta[j] = delta * sigmoidDerivativeKernel1(currentLayer[j]);
     }
 }
 
@@ -85,7 +85,7 @@ __global__ void createInputLayerKernel1(unsigned char *image, int inputSize, flo
         inputLayer[i] = image[i] / 255.0f;
 }
 
-returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols)
+returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols, int numEpochs)
 {
     GpuTimer timer;
     float timeInputLayer = 0, timeHiddenLayer1 = 0, timeHiddenLayer2 = 0, timeOutputLayer = 0;
@@ -173,7 +173,7 @@ returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabel
     CHECK(cudaMalloc((void **)&d_hiddenLayer1Delta, HIDDEN_SIZE_1 * sizeof(float)));
 
     // Training
-    for (int epoch = 1; epoch <= EPOCHS; epoch++)
+    for (int epoch = 1; epoch <= numEpochs; epoch++)
     {
         for (int batchStart = 0; batchStart < numTrainImages; batchStart += BATCH_SIZE)
         {

@@ -1,9 +1,15 @@
 #include "utils/utils.h"
 #include "modules/CPU/nnCPU.h"
 #include "modules/GPU/nnGPU.h"
+#include <stdlib.h>
 
-int main()
+int main(int argc, char *argv[])
 {
+    int epochs = 10;
+    if (argc == 2) {
+        epochs = atoi(argv[1]);
+    }
+
     const char *trainImageFile = "./dataset/train/train-images-idx3-ubyte";
     const char *trainLabelFile = "./dataset/train/train-labels-idx1-ubyte";
     const char *testImageFile = "./dataset/test/t10k-images-idx3-ubyte";
@@ -46,21 +52,11 @@ int main()
 
     // Run with host
     printf("### Training with Host ###\n\n");
-    train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
+    train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
 
     // Run with GPU
     printf("\n### Training with basic GPU ###\n\n");
-    trainKernel1(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
-
-    // Run with optimized GPU version 1
-    // printf("\n### Training with optimized GPU version 1 ###\n\n");
-    // nnOptimizeVer1 nnDeivceOp1();
-    // nnDeivceOp1.train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
-
-    // Run with optimized GPU version 2
-    // printf("\n### Training with optimized GPU version 2 ###\n\n");
-    // nnOptimizeVer2 nnDeivceOp2();
-    // nnDeivceOp2.train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols);
+    trainKernel1(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
 
     // Free memory
     for (int i = 0; i < numTrainImages; i++)

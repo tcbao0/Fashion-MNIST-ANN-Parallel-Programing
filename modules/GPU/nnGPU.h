@@ -4,7 +4,7 @@
 #include <cfloat>
 #include "../CPU/nnCPU.h"
 
-returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols);
+returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols, int numEpochs);
 
 __host__ __device__ float sigmoidKernel1(float x);
 __host__ __device__ float sigmoidDerivativeKernel1(float x);

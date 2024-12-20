@@ -94,7 +94,7 @@ float *initWeightBias(int size)
     return data;
 }
 
-returnStruct train(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols)
+returnStruct train(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols, int numEpochs)
 {
     GpuTimer timer;
     float timeInputLayer = 0, timeHiddenLayer1 = 0, timeHiddenLayer2 = 0, timeOutputLayer = 0;
@@ -111,7 +111,7 @@ returnStruct train(unsigned char **trainImages, unsigned char *trainLabels, unsi
     float *outputBiases = initWeightBias(OUTPUT_SIZE);
 
     // Training
-    for (int epoch = 1; epoch <= EPOCHS; epoch++)
+    for (int epoch = 1; epoch <= numEpochs; epoch++)
     {
         for (int batchStart = 0; batchStart < numTrainImages; batchStart += BATCH_SIZE)
         {

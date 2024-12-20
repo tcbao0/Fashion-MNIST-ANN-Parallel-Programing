@@ -1,5 +1,3 @@
-#ifndef UTILS_CU
-#define UTILS_CU
 #include "utils.h"
 
 GpuTimer::GpuTimer()
@@ -102,5 +100,3 @@ unsigned char *readLabels(const char *fileName, int *numLabels)
     fclose(f);
     return labels;
 }
-
-#endif

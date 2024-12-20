@@ -1,30 +1,33 @@
-#include "utils.cu"
+#include "utils/utils.h"
 #include "modules/CPU/nnCPU.h"
 #include "modules/GPU/nnGPU.h"
 
-int main() {
-    const char* trainImageFile = "./dataset/train/train-images-idx3-ubyte";
-    const char* trainLabelFile = "./dataset/train/train-labels-idx1-ubyte";
-    const char* testImageFile = "./dataset/test/t10k-images-idx3-ubyte";
-    const char* testLabelFile = "./dataset/test/t10k-labels-idx1-ubyte";
+int main()
+{
+    const char *trainImageFile = "./dataset/train/train-images-idx3-ubyte";
+    const char *trainLabelFile = "./dataset/train/train-labels-idx1-ubyte";
+    const char *testImageFile = "./dataset/test/t10k-images-idx3-ubyte";
+    const char *testLabelFile = "./dataset/test/t10k-labels-idx1-ubyte";
 
     int numTrainImages, numtestImages, numRows, numCols;
     int numTrainLabels, numtestLabels;
 
     // Read images file
-    unsigned char** trainImages = readImages(trainImageFile, &numTrainImages, &numRows, &numCols);
-    unsigned char** testImages = readImages(testImageFile, &numtestImages, &numRows, &numCols);
+    unsigned char **trainImages = readImages(trainImageFile, &numTrainImages, &numRows, &numCols);
+    unsigned char **testImages = readImages(testImageFile, &numtestImages, &numRows, &numCols);
 
-    if (!trainImages || !testImages) {
+    if (!trainImages || !testImages)
+    {
         printf("Error reading images file.\n");
         return 1;
     }
 
     // Read labels file
-    unsigned char* trainLabels = readLabels(trainLabelFile, &numTrainLabels);
-    unsigned char* testLabels = readLabels(testLabelFile, &numtestLabels);
+    unsigned char *trainLabels = readLabels(trainLabelFile, &numTrainLabels);
+    unsigned char *testLabels = readLabels(testLabelFile, &numtestLabels);
 
-    if (!trainLabels || !testLabels) {
+    if (!trainLabels || !testLabels)
+    {
         printf("Error reading labels file.\n");
         return 1;
     }

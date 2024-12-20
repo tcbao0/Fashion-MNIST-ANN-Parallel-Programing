@@ -3,7 +3,7 @@ NVCC = nvcc
 TARGET = run
 
 SRCS = main.cu \
-       utils.cu \
+       utils/utils.cu \
        modules/CPU/nnCPU.cu \
        modules/GPU/nnGPU.cu
 

@@ -1,4 +1,4 @@
-#include "modules/OptimizeV2/nnO2.cu"
+#include "utils/train.cu""
 #include <stdlib.h>
 
 int main(int argc, char *argv[])
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
     // Run with host
     printf("---------Training with Host---------\n");
-    train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
+    trainCPU(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
 
     // Run with GPU
     printf("\n---------Training with basic GPU---------\n");

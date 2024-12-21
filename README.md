@@ -1,4 +1,4 @@
-# Fashion-MNIST-ANN-Parallel-Programing
+# Fashion MNIST ANN Parallel Programing
 
 ## Table of Contents
 1. [Project Overview](#project-overview)

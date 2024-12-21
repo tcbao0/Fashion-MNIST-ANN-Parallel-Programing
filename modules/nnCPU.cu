@@ -106,10 +106,10 @@ float computeFinalAccuracy(unsigned char **testImages, unsigned char *testLabels
 
         // Lớp ẩn 1
         float *hiddenLayer1 = (float *)malloc(HIDDEN_SIZE_1 * sizeof(float));
-        forwardLayer(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1);
+        forwardLayer(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1, true);
 
         float *hiddenLayer2 = (float *)malloc(HIDDEN_SIZE_2 * sizeof(float));
-        forwardLayer(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
+        forwardLayer(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2, true);
 
         float *outputLayer = (float *)malloc(OUTPUT_SIZE * sizeof(float));
         forwardLayer(hiddenLayer2, outputWeights, outputBiases, outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);

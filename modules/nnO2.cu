@@ -50,6 +50,13 @@ __global__ void updateWeightsKernel3(float *weights, const float *layer, const f
     weights[prevLayerSize * blockIdx.x + threadIdx.x] += sharedResult[threadIdx.x];
 }
 
+__global__ void createInputLayerKernel3(unsigned char *image, int inputSize, float *inputLayer)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < inputSize)
+        inputLayer[i] = image[i] / 255.0f;
+}
+
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 __global__ void forwardLayerKernel3(float *inputLayer, float *weights, float *biases, float *outputLayer, int inputSize, int outputSize, bool applySigmoid) {

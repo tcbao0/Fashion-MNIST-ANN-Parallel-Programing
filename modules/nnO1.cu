@@ -40,6 +40,12 @@ __global__ void updateBiasesKernel2(float *biases, const float *delta, int layer
         biases[j] += learningRate * delta[j];
 }
 
+__global__ void createInputLayerKernel2(unsigned char *image, int inputSize, float *inputLayer)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < inputSize)
+        inputLayer[i] = image[i] / 255.0f;
+}
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 __global__ void forwardLayerKernel2(float *inputLayer, float *weights, float *biases, float *outputLayer, int inputSize, int outputSize, bool applySigmoid)

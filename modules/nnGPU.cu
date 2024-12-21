@@ -1,5 +1,15 @@
 #include "../utils/utils.h"
 
+__host__ __device__ float sigmoidKernel1(float x)
+{
+    return 1.0f / (1.0f + expf(-x));
+}
+
+__host__ __device__ float sigmoidDerivativeKernel1(float x)
+{
+    return x * (1.0f - x);
+}
+
 __global__ void softmaxKernel1(float *x, int size)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;

@@ -1,7 +1,7 @@
-#include "modules/nnCPU.cu"
-#include "modules/nnGPU.cu"
-#include "modules/nnO1.cu"
-#include "modules/nnO2.cu"
+#include "../modules/nnCPU.cu"
+#include "../modules/nnGPU.cu"
+#include "../modules/nnO1.cu"
+#include "../modules/nnO2.cu"
 
 returnStruct trainCPU(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols, int numEpochs)
 {
@@ -37,14 +37,14 @@ returnStruct trainCPU(unsigned char **trainImages, unsigned char *trainLabels, u
                 // Hidden 1
                 timer.Start();
                 float *hiddenLayer1 = (float *)malloc(HIDDEN_SIZE_1 * sizeof(float));
-                forwardLayer(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1);
+                forwardLayer(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1, true);
                 timer.Stop();
                 timeHiddenLayer1 += timer.Elapsed();
                 
                 // Hidden 2
                 timer.Start();
                 float *hiddenLayer2 = (float *)malloc(HIDDEN_SIZE_2 * sizeof(float));
-                forwardLayer(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
+                forwardLayer(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2, true);
                 timer.Stop();
                 timeHiddenLayer2 += timer.Elapsed();
 

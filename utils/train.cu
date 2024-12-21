@@ -64,7 +64,7 @@ returnStruct trainCPU(unsigned char **trainImages, unsigned char *trainLabels, u
                 float *outputDelta = (float *)malloc(OUTPUT_SIZE * sizeof(float));
                 calculateCValue(outputDelta, outputLayer, trainLabels, OUTPUT_SIZE, i);
                 // Gradient and update weights for output layer
-                updateWeights(outputWeights, outputBiases, hiddenLayer2, outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2, LEARNING_RATE);
+                updateWeights(outputWeights, outputBiases, hiddenLayer2, outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2);
                 timer.Stop();
                 timeHidden2Output += timer.Elapsed();
 
@@ -72,7 +72,7 @@ returnStruct trainCPU(unsigned char **trainImages, unsigned char *trainLabels, u
                 timer.Start();
                 float *hiddenLayer2Delta = (float *)malloc(HIDDEN_SIZE_2 * sizeof(float));
                 calculateDeltaLayer(hiddenLayer2, outputDelta, hiddenLayer2Delta, outputWeights, HIDDEN_SIZE_2, OUTPUT_SIZE);
-                updateWeights(hiddenWeights2, hiddenBiases2, hiddenLayer1, hiddenLayer2Delta, HIDDEN_SIZE_2, HIDDEN_SIZE_1, LEARNING_RATE);
+                updateWeights(hiddenWeights2, hiddenBiases2, hiddenLayer1, hiddenLayer2Delta, HIDDEN_SIZE_2, HIDDEN_SIZE_1);
                 timer.Stop();
                 timeHidden1Hidden2 += timer.Elapsed();
 
@@ -80,7 +80,7 @@ returnStruct trainCPU(unsigned char **trainImages, unsigned char *trainLabels, u
                 timer.Start();
                 float *hiddenLayer1Delta = (float *)malloc(HIDDEN_SIZE_1 * sizeof(float));
                 calculateDeltaLayer(hiddenLayer1, hiddenLayer2Delta, hiddenLayer1Delta, hiddenWeights2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
-                updateWeights(hiddenWeights1, hiddenBiases1, inputLayer, hiddenLayer1Delta, HIDDEN_SIZE_1, INPUT_SIZE, LEARNING_RATE);
+                updateWeights(hiddenWeights1, hiddenBiases1, inputLayer, hiddenLayer1Delta, HIDDEN_SIZE_1, INPUT_SIZE);
                 timer.Stop();
                 timeInputHidden1 += timer.Elapsed();
                 free(inputLayer);
@@ -254,10 +254,10 @@ returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabel
                 // Gradient and update weights for output layer
                 blockSize = dim3(128);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                updateWeightsKernel1<<<gridSize, blockSize>>>(d_outputWeights, d_hiddenLayer2, d_outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2, LEARNING_RATE);
+                updateWeightsKernel1<<<gridSize, blockSize>>>(d_outputWeights, d_hiddenLayer2, d_outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2);
                 blockSize = dim3(128);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                updateBiasesKernel1<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE, LEARNING_RATE);
+                updateBiasesKernel1<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE);
                 timer.Stop();
                 timeHidden2Output += timer.Elapsed();
 
@@ -269,11 +269,11 @@ returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_2 - 1) / blockSize.x + 1);
-                updateWeightsKernel1<<<gridSize, blockSize>>>(d_hiddenWeights2, d_hiddenLayer1, d_hiddenLayer2Delta, HIDDEN_SIZE_2, HIDDEN_SIZE_1, LEARNING_RATE);
+                updateWeightsKernel1<<<gridSize, blockSize>>>(d_hiddenWeights2, d_hiddenLayer1, d_hiddenLayer2Delta, HIDDEN_SIZE_2, HIDDEN_SIZE_1);
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_2 - 1) / blockSize.x + 1);
-                updateBiasesKernel1<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2, LEARNING_RATE);
+                updateBiasesKernel1<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2);
 
                 timer.Stop();
                 timeHidden1Hidden2 += timer.Elapsed();
@@ -286,11 +286,11 @@ returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_1 - 1) / blockSize.x + 1);
-                updateWeightsKernel1<<<gridSize, blockSize>>>(d_hiddenWeights1, d_inputLayer, d_hiddenLayer1Delta, HIDDEN_SIZE_1, INPUT_SIZE, LEARNING_RATE);
+                updateWeightsKernel1<<<gridSize, blockSize>>>(d_hiddenWeights1, d_inputLayer, d_hiddenLayer1Delta, HIDDEN_SIZE_1, INPUT_SIZE);
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_1 - 1) / blockSize.x + 1);
-                updateBiasesKernel1<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1, LEARNING_RATE);
+                updateBiasesKernel1<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1);
 
                 timer.Stop();
                 timeInputHidden1 += timer.Elapsed();
@@ -481,7 +481,8 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
                 // Softmax
                 blockSize = dim3(OUTPUT_SIZE);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                softmaxKernel2<<<gridSize, blockSize>>>(d_outputLayer, OUTPUT_SIZE);
+                sharedMemorySize = sizeof(float) * OUTPUT_SIZE;
+                softmaxKernel2<<<gridSize, blockSize, sharedMemorySize>>>(d_outputLayer, OUTPUT_SIZE);
                 timer.Stop();
                 timeOutputLayer += timer.Elapsed();
 
@@ -499,7 +500,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
                 updateWeightsKernel2<<<gridSize, blockSize, sharedMemorySize>>>(d_outputWeights, d_hiddenLayer2, d_outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2);
                 blockSize = dim3(128);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                updateBiasesKernel2<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE, LEARNING_RATE);
+                updateBiasesKernel2<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE);
                 timer.Stop();
                 timeHidden2Output += timer.Elapsed();
 
@@ -517,7 +518,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_2 - 1) / blockSize.x + 1);
-                updateBiasesKernel2<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2, LEARNING_RATE);
+                updateBiasesKernel2<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2);
                 timer.Stop();
                 timeHidden1Hidden2 += timer.Elapsed();
 
@@ -535,7 +536,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_1 - 1) / blockSize.x + 1);
-                updateBiasesKernel2<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1, LEARNING_RATE);
+                updateBiasesKernel2<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1);
                 timer.Stop();
                 timeInputHidden1 += timer.Elapsed();
             }
@@ -742,7 +743,7 @@ returnStruct trainKernel3(unsigned char **trainImages, unsigned char *trainLabel
                 updateWeightsKernel3<<<gridSize, blockSize, sharedMemorySize>>>(d_outputWeights, d_hiddenLayer2, d_outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2);
                 blockSize = dim3(128);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                updateBiasesKernel3<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE, LEARNING_RATE);
+                updateBiasesKernel3<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE);
                 timer.Stop();
                 timeHidden2Output += timer.Elapsed();
 
@@ -760,7 +761,7 @@ returnStruct trainKernel3(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_2 - 1) / blockSize.x + 1);
-                updateBiasesKernel3<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2, LEARNING_RATE);
+                updateBiasesKernel3<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2);
                 timer.Stop();
                 timeHidden1Hidden2 += timer.Elapsed();
 
@@ -778,7 +779,7 @@ returnStruct trainKernel3(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_1 - 1) / blockSize.x + 1);
-                updateBiasesKernel3<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1, LEARNING_RATE);
+                updateBiasesKernel3<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1);
                 timer.Stop();
                 timeInputHidden1 += timer.Elapsed();
             }

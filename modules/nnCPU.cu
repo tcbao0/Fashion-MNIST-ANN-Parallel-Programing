@@ -41,14 +41,14 @@ void calculateDeltaLayer(float *currentLayer, float *nextLayerDelta, float *curr
     }
 }
 
-void updateWeights(float *weights, float *biases, float *layer, float *delta, int layerSize, int prevLayerSize, float learningRate)
+void updateWeights(float *weights, float *biases, float *layer, float *delta, int layerSize, int prevLayerSize)
 {
     for (int j = 0; j < layerSize; j++)
         for (int k = 0; k < prevLayerSize; k++)
-            weights[k * layerSize + j] += learningRate * layer[k] * delta[j];
+            weights[k * layerSize + j] += LEARNING_RATE * layer[k] * delta[j];
 
     for (int j = 0; j < layerSize; j++)
-        biases[j] += learningRate * delta[j];
+        biases[j] += LEARNING_RATE * delta[j];
 }
 
 void softmax(float *x, int size)

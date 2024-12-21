@@ -30,7 +30,7 @@ $(O1_TARGET): $(O1_SRC) $(UTILS_SRC)
 	$(NVCC) $(INCLUDES) -o $@ $(O1_SRC) $(UTILS_SRC)
 
 $(O2_TARGET): $(O2_SRC) $(UTILS_SRC)
-	$(NVCC)  $(INCLUDES) -o $@ $(O2_SRC) $(UTILS_SRC)
+	$(NVCC) $(INCLUDES) -o $@ $(O2_SRC) $(UTILS_SRC)
 
 clean:
 	rm -rf $(OUTPUT_DIR)

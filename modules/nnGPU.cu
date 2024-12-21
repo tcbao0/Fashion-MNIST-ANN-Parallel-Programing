@@ -61,19 +61,19 @@ __global__ void calculateDeltaLayerKernel1(float *currentLayer, float *nextLayer
     }
 }
 
-__global__ void updateWeightsKernel1(float *weights, const float *layer, const float *delta, int layerSize, int prevLayerSize, float learningRate)
+__global__ void updateWeightsKernel1(float *weights, const float *layer, const float *delta, int layerSize, int prevLayerSize)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < layerSize)
         for (int k = 0; k < prevLayerSize; k++)
-            weights[k * layerSize + i] += learningRate * layer[k] * delta[i];
+            weights[k * layerSize + i] += LEARNING_RATE * layer[k] * delta[i];
 }
 
-__global__ void updateBiasesKernel1(float *biases, const float *delta, int layerSize, float learningRate)
+__global__ void updateBiasesKernel1(float *biases, const float *delta, int layerSize)
 {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     if (j < layerSize)
-        biases[j] += learningRate * delta[j];
+        biases[j] += LEARNING_RATE * delta[j];
 }
 
 __global__ void createInputLayerKernel1(unsigned char *image, int inputSize, float *inputLayer)

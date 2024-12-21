@@ -33,11 +33,11 @@ __global__ void calculateCValueKernel2(float *outputDelta, float *outputLayer, u
     outputDelta[j] = (trainLabels[i] == j ? 1.0f : 0.0f) - outputLayer[j];
 }
 
-__global__ void updateBiasesKernel2(float *biases, const float *delta, int layerSize, float learningRate)
+__global__ void updateBiasesKernel2(float *biases, const float *delta, int layerSize)
 {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     if (j < layerSize)
-        biases[j] += learningRate * delta[j];
+        biases[j] += LEARNING_RATE * delta[j];
 }
 
 __global__ void createInputLayerKernel2(unsigned char *image, int inputSize, float *inputLayer)

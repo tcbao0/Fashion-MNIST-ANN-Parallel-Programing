@@ -1,5 +1,31 @@
 #include "nnO2.h"
 
+__host__ __device__ float sigmoidKernel1(float x)
+{
+    return 1.0f / (1.0f + expf(-x));
+}
+
+__host__ __device__ float sigmoidDerivativeKernel1(float x)
+{
+    return x * (1.0f - x);
+}
+
+__global__ void softmaxKernel1(float *x, int size)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid >= size)
+        return;
+
+    float maxVal = -FLT_MAX;
+    for (int i = 0; i < size; i++)
+        maxVal = max(maxVal, x[i]);
+
+    float expSum = 0.0f;
+    for (int i = 0; i < size; i++)
+        expSum += expf(x[i] - maxVal);
+
+    x[tid] = expf(x[tid] - maxVal) / expSum;
+}
 
 __global__ void forwardLayerKernel3(float *inputLayer, float *weights, float *biases, float *outputLayer, int inputSize, int outputSize, bool applySigmoid) {
     extern __shared__ float sharedResult[];
@@ -28,6 +54,11 @@ __global__ void forwardLayerKernel3(float *inputLayer, float *weights, float *bi
     }
 }
 
+__global__ void calculateCValueKernel1(float *outputDelta, float *outputLayer, unsigned char *trainLabels, int i)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    outputDelta[j] = (trainLabels[i] == j ? 1.0f : 0.0f) - outputLayer[j];
+}
 
 __global__ void calculateDeltaLayerKernel3(float *currentLayer, float *nextLayerDelta, float *currentLayerDelta, float *weights, int currentLayerSize, int nextLayerSize)
 {
@@ -50,6 +81,28 @@ __global__ void calculateDeltaLayerKernel3(float *currentLayer, float *nextLayer
 
     if (threadIdx.x == 0)
         currentLayerDelta[blockIdx.x] = sharedResult[0] * sigmoidDerivativeKernel1(currentLayer[blockIdx.x]);
+}
+
+__global__ void updateWeightsKernel1(float *weights, const float *layer, const float *delta, int layerSize, int prevLayerSize, float learningRate)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < layerSize)
+        for (int k = 0; k < prevLayerSize; k++)
+            weights[k * layerSize + i] += learningRate * layer[k] * delta[i];
+}
+
+__global__ void updateBiasesKernel1(float *biases, const float *delta, int layerSize, float learningRate)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    if (j < layerSize)
+        biases[j] += learningRate * delta[j];
+}
+
+__global__ void createInputLayerKernel1(unsigned char *image, int inputSize, float *inputLayer)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < inputSize)
+        inputLayer[i] = image[i] / 255.0f;
 }
 
 returnStruct trainKernel3(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols, int numEpochs) {

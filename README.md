@@ -20,6 +20,7 @@ The dataset used for this project is the **FashionMNIST** dataset, which contain
 ```
 ├── .git/
 ├── .gitignore
+├── CPU.cu
 ├── dataset/
 │   ├── test/
 │   │   ├── t10k-images-idx3-ubyte
@@ -27,25 +28,20 @@ The dataset used for this project is the **FashionMNIST** dataset, which contain
 │   └── train/
 │       ├── train-images-idx3-ubyte
 │       └── train-labels-idx1-ubyte
-├── main.cu
+├── GPU.cu
+├── GPUv1.cu
+├── GPUv2.cu
 ├── Makefile
 ├── modules/
-│   ├── CPU/
-│   │   ├── nnCPU.cu
-│   │   └── nnCPU.h
-│   ├── GPU/
-│   │   ├── nnGPU.cu
-│   │   └── nnGPU.h
-│   ├── OptimizeV1/
-│   │   ├── nnO1.cu
-│   │   └── nnO1.h
-│   └── OptimizeV2/
-│       ├── nnO2.cu
-│       └── nnO2.h
+│   ├── nnCPU.cu
+│   ├── nnGPU.cu
+│   ├── nnO1.cu
+│   └── nnO2.cu
 ├── README.md
 ├── Report.ipynb
 ├── script.txt
 └── utils/
+    ├── train.cu
     ├── utils.cu
     └── utils.h
 ```
@@ -67,17 +63,20 @@ cd Fashion-MNIST-ANN-Parallel-Programing
 ```
 
 - Download dataset here and unzip it.
-- Compile it and run.
+- Compile it:
+```bash
+make && cd run
+```
    + Run with Default Epoch (10):
    Use the following command:
 ```bash
-make && ./run
+./run_cpu
 ```
 
    + Run with a Custom Epoch Count:
    You can specify the number of epochs as an argument:
 ```bash
-make && ./run {epochs}
+./run_gpu {epochs}
 ```
 
 ## Contributors

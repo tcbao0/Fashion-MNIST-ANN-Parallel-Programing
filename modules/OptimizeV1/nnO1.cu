@@ -1,5 +1,47 @@
 #include "nnO1.h"
 
+__host__ __device__ float sigmoidKernel2(float x)
+{
+    return 1.0f / (1.0f + expf(-x));
+}
+
+__host__ __device__ float sigmoidDerivativeKernel2(float x)
+{
+    return x * (1.0f - x);
+}
+
+__global__ void softmaxKernel2(float *x, int size)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid >= size)
+        return;
+
+    float maxVal = -FLT_MAX;
+    for (int i = 0; i < size; i++)
+        maxVal = max(maxVal, x[i]);
+
+    float expSum = 0.0f;
+    for (int i = 0; i < size; i++)
+        expSum += expf(x[i] - maxVal);
+
+    x[tid] = expf(x[tid] - maxVal) / expSum;
+}
+
+__global__ void calculateCValueKernel2(float *outputDelta, float *outputLayer, unsigned char *trainLabels, int i)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    outputDelta[j] = (trainLabels[i] == j ? 1.0f : 0.0f) - outputLayer[j];
+}
+
+__global__ void updateBiasesKernel2(float *biases, const float *delta, int layerSize, float learningRate)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    if (j < layerSize)
+        biases[j] += learningRate * delta[j];
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 __global__ void forwardLayerKernel2(float *inputLayer, float *weights, float *biases, float *outputLayer, int inputSize, int outputSize, bool applySigmoid)
 {
     extern __shared__ float sharedResult[];
@@ -19,7 +61,7 @@ __global__ void forwardLayerKernel2(float *inputLayer, float *weights, float *bi
     if (threadIdx.x == 0)
     {
         if (applySigmoid)
-            sharedResult[0] = sigmoidKernel1(sharedResult[0] + biases[blockIdx.x]);
+            sharedResult[0] = sigmoidKernel2(sharedResult[0] + biases[blockIdx.x]);
 
         outputLayer[blockIdx.x] = sharedResult[0];
     }
@@ -41,7 +83,7 @@ __global__ void calculateDeltaLayerKernel2(float *currentLayer, float *nextLayer
     }
 
     if (threadIdx.x == 0)
-        currentLayerDelta[blockIdx.x] = sharedResult[0] * sigmoidDerivativeKernel1(currentLayer[blockIdx.x]);
+        currentLayerDelta[blockIdx.x] = sharedResult[0] * sigmoidDerivativeKernel2(currentLayer[blockIdx.x]);
 }
 
 __global__ void updateWeightsKernel2(float *weights, const float *layer, const float *delta, int layerSize, int prevLayerSize)
@@ -152,7 +194,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
                 timer.Start();
                 blockSize = dim3(128);
                 gridSize = ((INPUT_SIZE - 1) / blockSize.x + 1);
-                createInputLayerKernel1<<<gridSize, blockSize>>>(d_trainImages + i * INPUT_SIZE, INPUT_SIZE, d_inputLayer);
+                createInputLayerKernel2<<<gridSize, blockSize>>>(d_trainImages + i * INPUT_SIZE, INPUT_SIZE, d_inputLayer);
                 timer.Stop();
                 timeInputLayer += timer.Elapsed();
 
@@ -184,7 +226,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
                 // Softmax
                 blockSize = dim3(OUTPUT_SIZE);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                softmaxKernel1<<<gridSize, blockSize>>>(d_outputLayer, OUTPUT_SIZE);
+                softmaxKernel2<<<gridSize, blockSize>>>(d_outputLayer, OUTPUT_SIZE);
                 timer.Stop();
                 timeOutputLayer += timer.Elapsed();
 
@@ -193,7 +235,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
                 timer.Start();
                 blockSize = dim3(1);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                calculateCValueKernel1<<<gridSize, blockSize>>>(d_outputDelta, d_outputLayer, d_trainLabels, i);
+                calculateCValueKernel2<<<gridSize, blockSize>>>(d_outputDelta, d_outputLayer, d_trainLabels, i);
 
                 // Gradient and update weights for output layer
                 blockSize = dim3(HIDDEN_SIZE_2);
@@ -202,7 +244,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
                 updateWeightsKernel2<<<gridSize, blockSize, sharedMemorySize>>>(d_outputWeights, d_hiddenLayer2, d_outputDelta, OUTPUT_SIZE, HIDDEN_SIZE_2);
                 blockSize = dim3(128);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                updateBiasesKernel1<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE, LEARNING_RATE);
+                updateBiasesKernel2<<<gridSize, blockSize>>>(d_outputBiases, d_outputDelta, OUTPUT_SIZE, LEARNING_RATE);
                 timer.Stop();
                 timeHidden2Output += timer.Elapsed();
 
@@ -220,7 +262,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_2 - 1) / blockSize.x + 1);
-                updateBiasesKernel1<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2, LEARNING_RATE);
+                updateBiasesKernel2<<<gridSize, blockSize>>>(d_hiddenBiases2, d_hiddenLayer2Delta, HIDDEN_SIZE_2, LEARNING_RATE);
                 timer.Stop();
                 timeHidden1Hidden2 += timer.Elapsed();
 
@@ -238,7 +280,7 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
 
                 blockSize = dim3(128);
                 gridSize = ((HIDDEN_SIZE_1 - 1) / blockSize.x + 1);
-                updateBiasesKernel1<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1, LEARNING_RATE);
+                updateBiasesKernel2<<<gridSize, blockSize>>>(d_hiddenBiases1, d_hiddenLayer1Delta, HIDDEN_SIZE_1, LEARNING_RATE);
                 timer.Stop();
                 timeInputHidden1 += timer.Elapsed();
             }

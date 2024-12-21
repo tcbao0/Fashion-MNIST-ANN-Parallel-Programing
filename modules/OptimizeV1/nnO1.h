@@ -8,6 +8,6 @@ returnStruct trainKernel2(unsigned char **trainImages, unsigned char *trainLabel
 
 __global__ void forwardLayerKernel2(float *inputLayer, float *weights, float *biases, float *outputLayer, int inputSize, int outputSize, bool applySigmoid);
 __global__ void calculateDeltaLayerKernel2(float *currentLayer, float *nextLayerDelta, float *currentLayerDelta, float *weights, int currentLayerSize, int nextLayerSize);
-__global__ void updateWeightsKernel2(float *weights, float *biases, float *layer, float *delta, int layerSize, int prevLayerSize, float learningRate);
+__global__ void updateWeightsKernel2(float *weights, float *biases, float *layer, float *delta, int layerSize, int prevLayerSize);
 
 #endif

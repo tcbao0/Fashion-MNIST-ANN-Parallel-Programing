@@ -48,7 +48,7 @@ __global__ void updateWeightsKernel2(float *weights, const float *layer, const f
 {
     extern __shared__ float sharedResult[];
     if (threadIdx.x < prevLayerSize)
-        sharedResult[threadIdx.x] = layer[threadIdx.x] * delta[blockIdx.x] * dc_learningRate;
+        sharedResult[threadIdx.x] = layer[threadIdx.x] * delta[blockIdx.x] * LEARNING_RATE;
 
     __syncthreads();
     weights[prevLayerSize * blockIdx.x + threadIdx.x] += sharedResult[threadIdx.x];

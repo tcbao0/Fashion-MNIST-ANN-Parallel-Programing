@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     float timeInputLayer = 0, timeHiddenLayer1 = 0, timeHiddenLayer2 = 0, timeOutputLayer = 0;
     float timeInputHidden1 = 0, timeHidden1Hidden2 = 0, timeHidden2Output = 0;
     float finalAccuracy = 0;
-    returnResult result;
+    returnStruct result;
 
     const char *trainImageFile = "./dataset/train/train-images-idx3-ubyte";
     const char *trainLabelFile = "./dataset/train/train-labels-idx1-ubyte";
@@ -80,15 +80,15 @@ int main(int argc, char *argv[])
     finalAccuracy = result.finalAccuracy;
 
     printf("\nQuá trình feedforward:\n");
-    printf("Thời gian chạy trung bình ở lớp Input trong 1 epoch là: %f\n", timeInputLayer / EPOCHS);
-    printf("Thời gian chạy trung bình ở lớp Hidden 1 trong 1 epoch là: %f\n", timeHiddenLayer1 / EPOCHS);
-    printf("Thời gian chạy trung bình ở lớp Hidden 2 trong 1 epoch là: %f\n", timeHiddenLayer2 / EPOCHS);
-    printf("Thời gian chạy trung bình ở lớp Output trong 1 epoch là: %f\n", timeOutputLayer / EPOCHS);
+    printf("Thời gian chạy trung bình ở lớp Input trong 1 epoch là: %f\n", timeInputLayer / epochs);
+    printf("Thời gian chạy trung bình ở lớp Hidden 1 trong 1 epoch là: %f\n", timeHiddenLayer1 / epochs);
+    printf("Thời gian chạy trung bình ở lớp Hidden 2 trong 1 epoch là: %f\n", timeHiddenLayer2 / epochs);
+    printf("Thời gian chạy trung bình ở lớp Output trong 1 epoch là: %f\n", timeOutputLayer / epochs);
 
     printf("\nQuá trình backpropagation:\n");
-    printf("Thời gian cập nhật trọng số trung bình từ hidden 1 về input trong 1 epoch là: %f\n", timeInputHidden1 / EPOCHS);
-    printf("Thời gian cập nhật trọng số trung bình từ hidden 2 về hidden 1 trong 1 epoch là: %f\n", timeHidden1Hidden2 / EPOCHS);
-    printf("Thời gian cập nhật trọng số trung bình từ output về hidden 2 trong 1 epoch là: %f\n", timeHidden2Output / EPOCHS);
+    printf("Thời gian cập nhật trọng số trung bình từ hidden 1 về input trong 1 epoch là: %f\n", timeInputHidden1 / epochs);
+    printf("Thời gian cập nhật trọng số trung bình từ hidden 2 về hidden 1 trong 1 epoch là: %f\n", timeHidden1Hidden2 / epochs);
+    printf("Thời gian cập nhật trọng số trung bình từ output về hidden 2 trong 1 epoch là: %f\n", timeHidden2Output / epochs);
 
     printf("Độ chính xác của mô hình trên tập test là: %.2f%%\n", finalAccuracy * 100);
 

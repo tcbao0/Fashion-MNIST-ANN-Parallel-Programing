@@ -1,7 +1,5 @@
-# Compiler and flags
 NVCC = nvcc
 
-# Include directories (if any)
 INCLUDES = -Iutils
 
 # Source files
@@ -11,14 +9,12 @@ O1_SRC = GPUv1.cu
 O2_SRC = GPUv2.cu
 UTILS_SRC = utils/utils.cu
 
-# Output directory and binaries
 OUTPUT_DIR = run
 CPU_TARGET = $(OUTPUT_DIR)/run_cpu
 GPU_TARGET = $(OUTPUT_DIR)/run_gpu
 O1_TARGET = $(OUTPUT_DIR)/run_o1
 O2_TARGET = $(OUTPUT_DIR)/run_o2
 
-# Rules
 all: $(OUTPUT_DIR) $(CPU_TARGET) $(GPU_TARGET) $(O1_TARGET) $(O2_TARGET)
 
 $(OUTPUT_DIR):

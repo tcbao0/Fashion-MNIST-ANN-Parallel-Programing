@@ -73,9 +73,7 @@ __global__ void updateBiasesKernel1(float *biases, const float *delta, int layer
 {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     if (j < layerSize)
-    {
         biases[j] += learningRate * delta[j];
-    }
 }
 
 __global__ void createInputLayerKernel1(unsigned char *image, int inputSize, float *inputLayer)
@@ -152,10 +150,7 @@ returnStruct trainKernel1(unsigned char **trainImages, unsigned char *trainLabel
         for (int j = 0; j < INPUT_SIZE; j++)
             h_testImages[i * INPUT_SIZE + j] = testImages[i][j];
 
-    timer.Start();
     CHECK(cudaMemcpy(d_trainImages, h_trainImages, numTrainImages * INPUT_SIZE * sizeof(unsigned char), cudaMemcpyHostToDevice));
-    timer.Stop();
-    timeInputLayer += timer.Elapsed();
     CHECK(cudaMemcpy(d_testImages, h_testImages, numTestImages * INPUT_SIZE * sizeof(unsigned char), cudaMemcpyHostToDevice));
 
     dim3 blockSize;

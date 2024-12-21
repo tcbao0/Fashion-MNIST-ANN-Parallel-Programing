@@ -5,7 +5,9 @@ TARGET = run
 SRCS = main.cu \
        utils/utils.cu \
        modules/CPU/nnCPU.cu \
-       modules/GPU/nnGPU.cu
+       modules/GPU/nnGPU.cu \
+       modules/OptimizeV1/nnOptimizeV1.cu \
+       modules/OptimizeV2/nnOptimizeV2.cu \
 
 INCLUDE_DIRS = -ICPU -IGPU
 

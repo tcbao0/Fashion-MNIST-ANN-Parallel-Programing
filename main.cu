@@ -39,24 +39,33 @@ int main(int argc, char *argv[])
     }
 
     // Show dataset information of training set
-    printf("Training Set:\n");
+    printf("---------Fashion MNIST Dataset---------\n");
+    printf("===> Training Set:\n");
     printf("Number of training images: %d\n", numTrainImages);
     printf("Training image size: %dx%d\n", numRows, numCols);
     printf("Number of training labels: %d\n", numTrainLabels);
 
     // Show dataset information of testing set
-    printf("Test Set:\n");
+    printf("===> Test Set:\n");
     printf("Number of Test images: %d\n", numtestImages);
     printf("Test image size: %dx%d\n", numRows, numCols);
     printf("Number of Test labels: %d\n\n", numtestLabels);
 
     // Run with host
-    printf("### Training with Host ###\n\n");
+    printf("---------Training with Host---------\n");
     train(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
 
     // Run with GPU
-    printf("\n### Training with basic GPU ###\n\n");
+    printf("\n---------Training with basic GPU---------\n");
     trainKernel1(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
+
+    // Run with GPU Optimize 1
+    printf("\n---------Training with optimized GPU 1---------\n");
+    trainKernel2(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
+
+    // Run with GPU Optimize 2
+    printf("\n---------Training with optimized GPU 2---------\n");
+    trainKernel3(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
 
     // Free memory
     for (int i = 0; i < numTrainImages; i++)

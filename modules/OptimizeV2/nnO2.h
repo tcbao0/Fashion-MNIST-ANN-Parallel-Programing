@@ -1,7 +1,7 @@
 #ifndef NEURAL_NETWORK_OP2_H
 #define NEURAL_NETWORK_OP2_H
 
-#include "../GPU/nnGPU.h"
+#include "../OptimizeV1/nnO2.h"
 
 returnStruct trainKernel3(unsigned char **trainImages, unsigned char *trainLabels, unsigned char **testImages, unsigned char *testLabels, int numTrainImages, int numTestImages, int numRows, int numCols, int numEpochs);
 __global__ void forwardLayerKernel3(float *inputLayer, float *weights, float *biases, float *outputLayer, int inputSize, int outputSize, bool applySigmoid);

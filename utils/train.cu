@@ -725,7 +725,8 @@ returnStruct trainKernel3(unsigned char **trainImages, unsigned char *trainLabel
                 // Softmax
                 blockSize = dim3(OUTPUT_SIZE);
                 gridSize = ((OUTPUT_SIZE - 1) / blockSize.x + 1);
-                softmaxKernel3<<<gridSize, blockSize>>>(d_outputLayer, OUTPUT_SIZE);
+                sharedMemorySize = sizeof(float) * OUTPUT_SIZE;
+                softmaxKernel3<<<gridSize, blockSize, sharedMemorySize>>>(d_outputLayer, OUTPUT_SIZE);
                 timer.Stop();
                 timeOutputLayer += timer.Elapsed();
 

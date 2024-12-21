@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     finalAccuracy = result.finalAccuracy;
 
 
-    printf("---------Summary---------\n");
+    printf("\n---------Summary---------\n");
     printf("Feedforward process:\n");
     printf("Average runtime of the Input layer in one epoch: %f\n", timeInputLayer / epochs);
     printf("Average runtime of Hidden layer 1 in one epoch: %f\n", timeHiddenLayer1 / epochs);

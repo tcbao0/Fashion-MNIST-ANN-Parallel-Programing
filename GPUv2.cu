@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     printf("Number of Test labels: %d\n\n", numtestLabels);
 
     // Run with GPU Optimize 2
-    printf("\n---------Training with optimized GPU 2---------\n");
+    printf("---------Training with optimized GPU 2---------\n");
     result = trainKernel3(trainImages, trainLabels, testImages, testLabels, numTrainImages, numtestImages, numRows, numCols, epochs);
 
     // Free memory
@@ -79,18 +79,18 @@ int main(int argc, char *argv[])
     timeHidden2Output = result.timeHidden2Output;
     finalAccuracy = result.finalAccuracy;
 
-    printf("\nQuá trình feedforward:\n");
-    printf("Thời gian chạy trung bình ở lớp Input trong 1 epoch là: %f\n", timeInputLayer / epochs);
-    printf("Thời gian chạy trung bình ở lớp Hidden 1 trong 1 epoch là: %f\n", timeHiddenLayer1 / epochs);
-    printf("Thời gian chạy trung bình ở lớp Hidden 2 trong 1 epoch là: %f\n", timeHiddenLayer2 / epochs);
-    printf("Thời gian chạy trung bình ở lớp Output trong 1 epoch là: %f\n", timeOutputLayer / epochs);
+    printf("---------Summary---------\n");
+    printf("Feedforward process:\n");
+    printf("Average runtime of the Input layer in one epoch: %f\n", timeInputLayer / epochs);
+    printf("Average runtime of Hidden layer 1 in one epoch: %f\n", timeHiddenLayer1 / epochs);
+    printf("Average runtime of Hidden layer 2 in one epoch: %f\n", timeHiddenLayer2 / epochs);
+    printf("Average runtime of the Output layer in one epoch: %f\n", timeOutputLayer / epochs);
 
-    printf("\nQuá trình backpropagation:\n");
-    printf("Thời gian cập nhật trọng số trung bình từ hidden 1 về input trong 1 epoch là: %f\n", timeInputHidden1 / epochs);
-    printf("Thời gian cập nhật trọng số trung bình từ hidden 2 về hidden 1 trong 1 epoch là: %f\n", timeHidden1Hidden2 / epochs);
-    printf("Thời gian cập nhật trọng số trung bình từ output về hidden 2 trong 1 epoch là: %f\n", timeHidden2Output / epochs);
+    printf("\nBackpropagation process:\n");
+    printf("Average weight update time from Hidden 1 to Input layer in one epoch: %f\n", timeInputHidden1 / epochs);
+    printf("Average weight update time from Hidden 2 to Hidden 1 layer in one epoch: %f\n", timeHidden1Hidden2 / epochs);
+    printf("Average weight update time from Output to Hidden 2 layer in one epoch: %f\n", timeHidden2Output / epochs);
 
-    printf("Độ chính xác của mô hình trên tập test là: %.2f%%\n", finalAccuracy * 100);
-
+    printf("Model accuracy on the test set: %.2f%%\n", finalAccuracy * 100);
     return 0;
 }

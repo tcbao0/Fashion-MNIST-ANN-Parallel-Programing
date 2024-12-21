@@ -61,24 +61,24 @@ The dataset used for this project is the **FashionMNIST** dataset, which contain
 
 #### 1. Setting Up the Environment
 - Clone the repository:
-  ```bash
-  git clone https://github.com/tcbao0/Fashion-MNIST-ANN-Parallel-Programing.git
-  cd Fashion-MNIST-ANN-Parallel-Programing
-  ```
+```bash
+git clone https://github.com/tcbao0/Fashion-MNIST-ANN-Parallel-Programing.git
+cd Fashion-MNIST-ANN-Parallel-Programing
+```
 
 - Download dataset here and unzip it.
 - Compile it and run.
    + Run with Default Epoch (10):
    Use the following command:
-      ```bash
-      make && ./run
-      ```
+```bash
+make && ./run
+```
 
    + Run with a Custom Epoch Count:
    You can specify the number of epochs as an argument:
-      ```bash
-      make && ./run {epochs}
-      ```
+```bash
+make && ./run {epochs}
+```
 
 ## Contributors
 

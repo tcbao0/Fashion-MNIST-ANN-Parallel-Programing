@@ -1,8 +1,8 @@
 #include "utils/utils.h"
 #include "modules/CPU/nnCPU.h"
 #include "modules/GPU/nnGPU.h"
-#include "modules/OptimizeV1\nnO1.cu"
-#include "modules/OptimizeV2\nnO2.cu"
+#include "modules/OptimizeV1/nnO1.cu"
+#include "modules/OptimizeV2/nnO2.cu"
 #include <stdlib.h>
 
 int main(int argc, char *argv[])

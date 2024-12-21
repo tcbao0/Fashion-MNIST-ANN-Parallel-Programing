@@ -1,6 +1,7 @@
 #ifndef NEURAL_NETWORK_CPU_H
 #define NEURAL_NETWORK_CPU_H
 
+#include <cfloat>
 #include <cmath>
 #include <iostream>
 #include <cstdlib>

@@ -347,3 +347,39 @@ returnStruct trainKernel3(unsigned char **trainImages, unsigned char *trainLabel
 
     return result;
 }
+
+
+float computeFinalAccuracy(unsigned char **testImages, unsigned char *testLabels, int numTestImages, int numRows, int numCols, float *hiddenWeights1, float *hiddenWeights2, float *outputWeights, float *hiddenBiases1, float *hiddenBiases2, float *outputBiases, int batchSize)
+{
+    int correct = 0;
+    for (int i = 0; i < numTestImages; i++)
+    {
+        // Feedforward
+        float inputLayer[INPUT_SIZE];
+        for (int j = 0; j < INPUT_SIZE; j++)
+            inputLayer[j] = testImages[i][j] / 255.0f;
+
+        // Lớp ẩn 1
+        float *hiddenLayer1 = (float *)malloc(HIDDEN_SIZE_1 * sizeof(float));
+        forwardLayer(inputLayer, hiddenWeights1, hiddenBiases1, hiddenLayer1, INPUT_SIZE, HIDDEN_SIZE_1);
+
+        float *hiddenLayer2 = (float *)malloc(HIDDEN_SIZE_2 * sizeof(float));
+        forwardLayer(hiddenLayer1, hiddenWeights2, hiddenBiases2, hiddenLayer2, HIDDEN_SIZE_1, HIDDEN_SIZE_2);
+
+        float *outputLayer = (float *)malloc(OUTPUT_SIZE * sizeof(float));
+        forwardLayer(hiddenLayer2, outputWeights, outputBiases, outputLayer, HIDDEN_SIZE_2, OUTPUT_SIZE, false);
+
+        // Softmax
+        softmax(outputLayer, OUTPUT_SIZE);
+
+        // Check predict
+        int predictedLabel = 0;
+        for (int j = 1; j < OUTPUT_SIZE; j++)
+            if (outputLayer[j] > outputLayer[predictedLabel])
+                predictedLabel = j;
+
+        if (predictedLabel == testLabels[i])
+            correct++;
+    }
+    return (float)correct / numTestImages;
+}
